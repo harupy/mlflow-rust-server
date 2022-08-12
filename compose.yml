@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: mlflowdb
+      POSTGRES_USER: mlflowuser
+      POSTGRES_PASSWORD: mlflowpassword
+    ports:
+      - 5432:5432
+
+  test-postgres:
+    image: mlflow-rust-server
+    build:
+      context: .
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+    environment:
+      MLFLOW_TRACKING_URI: postgresql://mlflowuser:mlflowpassword@postgres:5432/mlflowdb
+      DEFAULT_ARTIFACT_ROOT: ./artifacts
+    command: bash -c "python generate_data.py && cargo test stores::tracking::postgres"
+
+  test-sqlite:
+    image: mlflow-rust-server
+    build:
+      context: .
+    volumes:
+      - .:/app
+    environment:
+      MLFLOW_TRACKING_URI: sqlite:///tmp/mlflowdb.sqlite
+      DEFAULT_ARTIFACT_ROOT: ./artifacts
+    command: cargo test stores::tracking::sqlite -- --test-threads=1

@@ -25,9 +25,8 @@ pub struct SqlExperimentTag {
     pub value: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ExperimentTag {
-    pub experiment_id: String,
     pub key: String,
     pub value: String,
 }

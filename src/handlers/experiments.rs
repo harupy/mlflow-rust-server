@@ -23,6 +23,7 @@ pub async fn list_experiments(server_config: web::Data<ServerConfig>) -> Result<
 #[derive(Deserialize)]
 pub struct SearchExperimentsRequest {
     max_results: Option<i64>,
+    filter_string: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -37,7 +38,7 @@ pub async fn search_experiments(
 ) -> Result<HttpResponse, actix_web::Error> {
     let store = get_store_from_server_config(&server_config).await?;
     let experiments = store
-        .search_experiments(params.max_results)
+        .search_experiments(params.max_results, params.filter_string.as_deref(), None)
         .await
         .map_err(actix_web::error::ErrorInternalServerError)?;
     store.teardown().await;
@@ -86,7 +87,7 @@ async fn create_experiment(
 ) -> Result<impl Responder> {
     let store = get_store_from_server_config(&server_config).await?;
     let experiment = store
-        .create_experiment(data.name.as_str(), data.artifact_location.as_deref())
+        .create_experiment(data.name.as_str(), data.artifact_location.as_deref(), None)
         .await?;
     store.teardown().await;
     Ok(web::Json(GetExperimentResponse { experiment }))

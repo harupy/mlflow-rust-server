@@ -57,7 +57,6 @@ impl PostgresStore {
         Ok(tags
             .into_iter()
             .map(|t| ExperimentTag {
-                experiment_id: t.experiment_id.to_string(),
                 key: t.key,
                 value: t.value,
             })
@@ -149,6 +148,8 @@ impl Store for PostgresStore {
     async fn search_experiments(
         &self,
         max_results: Option<i64>,
+        filter_string: Option<&str>,
+        order_by: Option<Vec<&str>>,
     ) -> Result<Vec<Experiment>, MlflowError> {
         let sql_experiments: Vec<SqlExperiment> = sqlx::query_as(
             r#"
@@ -194,6 +195,7 @@ impl Store for PostgresStore {
         &self,
         name: &str,
         artifact_location: Option<&str>,
+        tags: Option<Vec<&ExperimentTag>>,
     ) -> Result<Experiment, MlflowError> {
         sqlx::query(
             r#"INSERT INTO experiments (name, artifact_location, lifecycle_stage) VALUES ($1, '', 'active')"#,
@@ -312,7 +314,7 @@ mod tests {
         dotenv::from_filename(".env_dev").ok();
         let store = PostgresStore::from_env().await.unwrap();
         let name = Uuid::new_v4().to_string();
-        store.create_experiment(&name, None).await.unwrap();
+        store.create_experiment(&name, None, None).await.unwrap();
         let experiments = store.list_experiments().await.unwrap();
         assert!(experiments
             .into_iter()
@@ -327,8 +329,8 @@ mod tests {
         let store = PostgresStore::from_env().await.unwrap();
         let name1 = Uuid::new_v4().to_string();
         let name2 = Uuid::new_v4().to_string();
-        store.create_experiment(&name1, None).await.unwrap();
-        store.create_experiment(&name2, None).await.unwrap();
+        store.create_experiment(&name1, None, None).await.unwrap();
+        store.create_experiment(&name2, None, None).await.unwrap();
         let experiments = store.list_experiments().await.unwrap();
         let experiment_names = experiments
             .into_iter()
@@ -343,7 +345,7 @@ mod tests {
         dotenv::from_filename(".env_dev").ok();
         let store = PostgresStore::from_env().await.unwrap();
         let name = Uuid::new_v4().to_string();
-        let experiment = store.create_experiment(&name, None).await.unwrap();
+        let experiment = store.create_experiment(&name, None, None).await.unwrap();
         let deleted_experiment = store
             .delete_experiment(&experiment.experiment_id)
             .await
@@ -356,7 +358,7 @@ mod tests {
         dotenv::from_filename(".env_dev").ok();
         let store = PostgresStore::from_env().await.unwrap();
         let name = Uuid::new_v4().to_string();
-        let experiment = store.create_experiment(&name, None).await.unwrap();
+        let experiment = store.create_experiment(&name, None, None).await.unwrap();
         let deleted_experiment = store
             .delete_experiment(&experiment.experiment_id)
             .await
@@ -373,7 +375,7 @@ mod tests {
         dotenv::from_filename(".env_dev").ok();
         let store = PostgresStore::from_env().await.unwrap();
         let name = Uuid::new_v4().to_string();
-        let experiment = store.create_experiment(&name, None).await.unwrap();
+        let experiment = store.create_experiment(&name, None, None).await.unwrap();
         let new_name = Uuid::new_v4().to_string();
         let updated_experiment = store
             .update_experiment(&experiment.experiment_id, &new_name)

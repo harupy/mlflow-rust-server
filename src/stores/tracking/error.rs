@@ -4,6 +4,7 @@ use serde::Serialize;
 #[derive(Debug)]
 pub enum MlflowError {
     DatabaseError(sqlx::Error),
+    InvalidParameter(String),
 }
 
 #[derive(Serialize)]
@@ -27,6 +28,7 @@ impl ResponseError for MlflowError {
     fn status_code(&self) -> actix_web::http::StatusCode {
         match *self {
             Self::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::InvalidParameter(_) => StatusCode::BAD_REQUEST,
         }
     }
 
